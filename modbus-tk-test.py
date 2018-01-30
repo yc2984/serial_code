@@ -16,9 +16,9 @@ PORT = 'COM10'
 
 # PORT = '/dev/ptyp5'
 
-def write_file(time_data, data, logpath, filename):
+def write_file(data, logpath, filename):
     with open(os.path.join(logpath, filename), 'a', encoding="utf-8") as f:  # open log file
-        f.write(str(time_data) + "," + str(data) + '\n')
+        f.write(str(data) + '\n')
         f.close()
 
 
@@ -78,7 +78,7 @@ def main():
             #if values.empty:
             if len(values) == 1:
 
-                write_file(current_date_time, value, logpath, filename)
+                write_file(list_value, logpath, filename)
                 # check the dimension and the last row of values DataFrame
                 print("The dimension of values DataFrame: %s" %(values.shape,))
                 print("The last row of values DataFrame" + str(values.iloc[-1, :]))
@@ -93,7 +93,7 @@ def main():
                 continue
 
             #values = pd.concat([values, pd.DataFrame(list(value)).T], axis=0)
-            write_file(current_date_time, value, logpath, filename)
+            write_file(list_value, logpath, filename)
             print("The new value is recorded")
 
             #if cmd.find('quit') == 0:

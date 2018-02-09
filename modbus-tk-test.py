@@ -45,7 +45,7 @@ def main():
 
         server.start()
         print("server started")
-        slave_1 = server.add_slave(1)
+        slave_1 = server.add_slave(1, unsigned=False)
         print("slave_1 is added")
         slave_1.add_block('block1', cst.HOLDING_REGISTERS, 100, 127)  # According to Excelsheet of Siemens.
         print("holding registers are added")
@@ -58,7 +58,8 @@ def main():
         # construct a DataFrame for data logging (log all the data in the DataFrame, only write the changed data)
         values = pd.DataFrame()
         date_time_series = pd.Series()
-        while True:
+        start_time = time.time()
+        while time.time()- start_time < 20: # 1 min timer
 
             #cmd = sys.stdin.readline()
             #print("cmd is:"+str(cmd))
@@ -123,8 +124,8 @@ def main():
         #write all the readings of this log to a txt file
         #values.to_csv(os.path.join(glmpath, filename_long),index=None)
     finally:
-        values.to_csv(os.path.join(glmpath, filename_long), index=None)
-        print("hi")
+        values.to_csv(os.path.join(logpath, filename_long), index=None)
+        print("Time is up")
         server.stop()
 
 

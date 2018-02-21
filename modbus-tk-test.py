@@ -11,7 +11,7 @@ import modbus_tk.defines as cst
 from modbus_tk import modbus_rtu
 import serial
 
-PORT = 'COM10'
+PORT = 'COM4'
 
 # PORT = '/dev/ptyp5'
 logpath = r'C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Result'
@@ -47,19 +47,19 @@ def main():
         print("server started")
         slave_1 = server.add_slave(1, unsigned=False)
         print("slave_1 is added")
-        slave_1.add_block('block1', cst.HOLDING_REGISTERS, 100, 127)  # According to Excelsheet of Siemens.
+        slave_1.add_block('block1', cst.HOLDING_REGISTERS, 99, 127)  # According to Excelsheet of Siemens.
         print("holding registers are added")
         # Initialize the values with example txt from Stephane.
         df_sensor_ID = pd.read_csv(r"C:\Users\Yang\Documents\GLM_test\READINGS.TXT",header=None)
         initial_values = df_sensor_ID.iloc[:,1].tolist()
 
-        slave_1.set_values('block1', 100, initial_values)  # Initiate the values with the txt from Stephane
+        slave_1.set_values('block1', 99, initial_values)  # Initiate the values with the txt from Stephane
         # slave_1.set_values('block1', 100, 255)  # PLC--第0011寄存器的初始值为高八位全为0，低八位全为1
         # construct a DataFrame for data logging (log all the data in the DataFrame, only write the changed data)
         values = pd.DataFrame()
         date_time_series = pd.Series()
         start_time = time.time()
-        while time.time()- start_time < 20: # 1 min timer
+        while time.time()- start_time < 600: # 1 min timer
 
             #cmd = sys.stdin.readline()
             #print("cmd is:"+str(cmd))
@@ -75,7 +75,7 @@ def main():
             date_time_series = pd.concat([date_time_series, pd.Series(current_date_time)])  # not needed
 
             # Read current value
-            value = slave_1.get_values('block1', 100, 127)
+            value = slave_1.get_values('block1', 99, 127)
             #print("length of value: "+str(len(value))) #127
             list_value = list(value)
             print('Current value read is:' + str(value))  # tuple

@@ -8,10 +8,10 @@ import numpy as np
 from pandas.util.testing import assert_series_equal
 import modbus_tk
 import modbus_tk.defines as cst
-from modbus_tk import modbus_rtu
+from modbus_tk import modbus_rtu, hooks
 import serial
-
-PORT = 'COM4'
+import logging
+PORT = 'COM5'
 
 # PORT = '/dev/ptyp5'
 logpath = r'C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Result'
@@ -34,8 +34,8 @@ def write_glm_feed(data, glmpath, glmtxt):  # glm is a hydrostatic software
 
 def main():
     """main"""
-    logger = modbus_tk.utils.create_logger(name="console", record_format="%(message)s")
-
+    logger = modbus_tk.utils.create_logger(name="console", record_format="%(message)s",level=logging.DEBUG)
+    #logger.setLevel(logging.DEBUG)
     # Create the server
     server = modbus_rtu.RtuServer(serial.Serial(PORT))
 
@@ -43,24 +43,43 @@ def main():
         logger.info("running...")
         logger.info("enter 'quit' for closing the server")
 
+        def log_data(data):
+            server, bytes_data = data
+            logger.info(bytes_data)
+
+        hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
+        print("hi1")
+        hooks.install_hook('modbus_rtu.RtuServer.before_write', log_data)
+        print("hi2")
+
         server.start()
         print("server started")
         slave_1 = server.add_slave(1, unsigned=False)
+        #slave_1 = server.add_slave(1)
         print("slave_1 is added")
-        slave_1.add_block('block1', cst.HOLDING_REGISTERS, 99, 127)  # According to Excelsheet of Siemens.
+        slave_1.add_block('block1', cst.HOLDING_REGISTERS, 100, 127)  # According to Excelsheet of Siemens.
+        slave_1.add_block('block2', cst.HOLDING_REGISTERS, 300, 79)
         print("holding registers are added")
         # Initialize the values with example txt from Stephane.
         df_sensor_ID = pd.read_csv(r"C:\Users\Yang\Documents\GLM_test\READINGS.TXT",header=None)
         initial_values = df_sensor_ID.iloc[:,1].tolist()
 
-        slave_1.set_values('block1', 99, initial_values)  # Initiate the values with the txt from Stephane
+        slave_1.set_values('block1', 100, initial_values)  # Initiate the values with the txt from Stephane
         # slave_1.set_values('block1', 100, 255)  # PLC--第0011寄存器的初始值为高八位全为0，低八位全为1
         # construct a DataFrame for data logging (log all the data in the DataFrame, only write the changed data)
         values = pd.DataFrame()
         date_time_series = pd.Series()
         start_time = time.time()
-        while time.time()- start_time < 600: # 1 min timer
+        while time.time() - start_time < 600: # 1 min timer
 
+            hooks.install_hook('modbus_rtu.RtuServer.after_open',log_data)
+            print("1")
+            hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
+            print("2")
+            hooks.install_hook('modbus_rtu.RtuServer.before_write', log_data)
+            print("3")
+            hooks.install_hook('modbus_rtu.RtuServer.after_write',log_data)
+            print("4")
             #cmd = sys.stdin.readline()
             #print("cmd is:"+str(cmd))
             # args = cmd.split(' ')
@@ -75,7 +94,8 @@ def main():
             date_time_series = pd.concat([date_time_series, pd.Series(current_date_time)])  # not needed
 
             # Read current value
-            value = slave_1.get_values('block1', 99, 127)
+            value = slave_1.get_values('block1', 100, 127)
+
             #print("length of value: "+str(len(value))) #127
             list_value = list(value)
             print('Current value read is:' + str(value))  # tuple

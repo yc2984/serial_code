@@ -11,10 +11,9 @@ from modbus_tk import modbus_rtu, hooks
 import serial
 import logging
 PORT = 'COM10'
-
 # PORT = '/dev/ptyp5'
+
 logpath = r'C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Log'
-#filename = 'unique_output.csv'
 filename_long = 'all_output.csv'
 
 
@@ -34,6 +33,14 @@ glmtxt = 'glminput.txt'
 
 def write_glm_feed(data, glmpath, glmtxt):  # glm is a hydrostatic software
     data.to_csv(os.path.join(glmpath, glmtxt), index=False,header=None, mode='w')
+
+trimheel_path = r'C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Read_trim_heel'
+trimheel_filename = 'trimheel.txt'
+
+
+def read_trimheel(trimheel_path,trimheel_filename):
+    with open(os.path.join(trimheel_path,trimheel_filename),'r') as th:
+        trimheel = list(th.read().split(","))
 
 
 def main():

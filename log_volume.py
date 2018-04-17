@@ -29,9 +29,9 @@ def read_volume(df_vols, vol_file, time_to_average_on, sample_rate):
     current_vol_list = df_current_vol.iloc[:, 1].tolist()
     num_rows = time_to_average_on / (60 / sample_rate)  # eg. sample_rate 12, means read every 5 seconds
     if len(df_vols) < num_rows:
-        df_vols = pd.concat([df_vols, df_current_vol], axis=0)
+        df_vols = pd.concat([df_vols, pd.DataFrame(current_vol_list).T], axis=0)
     else:
-        df_vols = pd.concat([df_vols[:num_rows-1], df_current_vol], axis=0)
+        df_vols = pd.concat([df_vols.tail(num_rows-1), pd.DataFrame(current_vol_list).T], axis=0)
 
     average_vol = df_vols.mean(numeric_only=True, axis=0).tolist()
     assert isinstance(average_vol, list)
@@ -84,7 +84,7 @@ def main(logpath, log_mode, sample_rate):
             continue
         if volume_change(average_vol_list, current_vol_list, 50):
             write_file(current_time_vol_list, logpath, vol_daily_file, log_header, False, 'a')
-            df_vols = pd.concat([df_vols, current_vol_list], axis=0)
+            df_vols = pd.concat([df_vols, pd.DataFrame(current_vol_list).T], axis=0)
             print("new value has been logged")
 
 

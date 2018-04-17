@@ -22,7 +22,7 @@ def tanklist(vol_file):
         #print("sensor", id, ":", tankname)
         #print(type(tankname))
         #print(len(tankname))
-    print("length of tanknames:",len(tanknames))
-    print("Type of tanknames:",type(tanknames))
+    #print("length of tanknames:",len(tanknames))
+    #print("Type of tanknames:",type(tanknames))
     return tanknames
 

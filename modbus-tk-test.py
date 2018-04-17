@@ -34,6 +34,7 @@ glmtxt = 'glminput.txt'
 def write_glm_feed(data, glmpath, glmtxt):  # glm is a hydrostatic software
     data.to_csv(os.path.join(glmpath, glmtxt), index=False,header=None, mode='w')
 
+
 trimheel_path = r'C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Read_trim_heel'
 trimheel_filename = 'trimheel.txt'
 

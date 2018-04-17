@@ -23,9 +23,12 @@ def read_volume(df_vols, vol_file, sample_period, sample_rate):
     1. Read READING+.txt file for real-time volumes
     2. refresh the df_vols that has all the tank reading in the last defined time_gap
     3. returns
-        (1) current volumes, list
-        (2) average reading from the last time_gap, list
-        (3) all the tank names, list
+        (1) average volume of the second last minute
+        (2) average volume of the last minute
+        (3) the live table
+        (4) the number of rows required to start logging
+        (5) the number of rows in current live table
+
     """
     df_current_vol = pd.read_csv(vol_file, header=None)
     current_vol_list = df_current_vol.iloc[:, 1].tolist()
@@ -53,7 +56,7 @@ def volume_change(vol1, vol2, threshold):
     at least one of the tank volume changed more than 50 tons """
     if max([abs(a-b) for a, b in zip(vol1, vol2)]) >= threshold:
         print("at least one volume has changed more than %d" % threshold)
-        print([abs(a-b) for a, b in zip(vol1, vol2)][:5])
+        print("The change of the first five values: ",[abs(a-b) for a, b in zip(vol1, vol2)][:5])
         return True
     else:
         print("no volume has changed more than %d" % threshold)

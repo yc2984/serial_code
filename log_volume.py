@@ -83,7 +83,7 @@ def write_file(data, logpath, filename, header):
         df.to_csv(f, index=None, header=if_header)
 
 
-def main(logpath, log_mode, sample_period, sample_rate):
+def main(logpath, sample_rate):
     """This function logs the volume to a csv file when:
     compared with last minute average
     at least one of the tank volume changed more than 50 tons
@@ -91,6 +91,15 @@ def main(logpath, log_mode, sample_period, sample_rate):
     df_vols = pd.DataFrame()
     start_time = time.time()
     while True:
+        # There should be a function detecting user input for switching mode.
+        with open(r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\serial_code\mode.txt",'r') as f:
+            log_mode = f.read()
+
+        print("you're here")
+        sample_period = 60
+        if log_mode == "LOAD" :
+            sample_period = 10
+
         time.sleep(60 / sample_rate)
         print("It's %s mode" %log_mode)
         tanknames = tanklist(reading_plus_file)
@@ -115,6 +124,6 @@ def main(logpath, log_mode, sample_period, sample_rate):
 
 
 if __name__ == "__main__":
-    main(logpath, log_mode(), 30, 30)
+    main(logpath, 30)  # logpath, sample_rate (no.of readings per minute)
 
 

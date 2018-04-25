@@ -1,7 +1,7 @@
 import pandas as pd
+from Path_file_names import glm_id_name
 
-table = pd.read_csv(r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Reference\GLM_Info\sensor_id_tankname_vol.csv")
-
+table = pd.read_csv(glm_id_name)
 
 def id_to_tankname(id):
     """ This function looks up the tank name by sensor ID, returns a list of tanknames"""

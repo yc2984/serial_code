@@ -5,17 +5,7 @@ import datetime
 import pandas as pd
 from Lookup_tank_name import id_to_tankname, tanklist, table
 from pathlib import Path
-
-reading_plus_file = r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\GLM_maker_test\03042018\AUDAX - GHS_Version16\AUDAX\READINGS+.TXT"
-logpath = r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Log"
-
-
-def log_mode():
-    """ This function read from user input. By default, normal mode is selected."""
-    log_mode = input("Please enter LOAD to enter loading mode:")
-    if log_mode == "":
-        return "Normal"
-    return log_mode
+from Path_file_names import logpath, reading_plus_file, mode_file
 
 
 def read_volume(df_vols, vol_file, sample_period, sample_rate):
@@ -93,7 +83,7 @@ def main(logpath, sample_rate, sample_period=60):
     start_time = time.time()
     while True:
         # There should be a function detecting user input for switching mode.
-        with open(r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\serial_code\mode.txt",'r') as f:
+        with open(mode_file,'r') as f:
             log_mode = f.read()
 
         print("\n")
@@ -127,6 +117,6 @@ def main(logpath, sample_rate, sample_period=60):
 
 
 if __name__ == "__main__":
-    main(logpath, 60)  # logpath, sample_rate (no.of readings per minute), by default read measurement every second
+    main(logpath, 30)  # logpath, sample_rate (no.of readings per minute), by default read measurement every 2 second
 
 

@@ -16,11 +16,14 @@ def read_sensor_id():
     # Read sensor ID, tank names and initial tank values from a file.
     # Initialize the values with example txt from Stephane.
     df_sensor_id = pd.read_csv(initial_info, header=None)
-    sensor_id = df_sensor_id.loc[:, 0].tolist()
-    initial_values = df_sensor_id.iloc[:, 1].tolist()  # the second column is the initial values
-    Tank_names = df_sensor_id.iloc[:, 2].tolist()
-    # Initiate a DataFrame with only tank names for data logging (log all the data in this DataFrame)
-    return sensor_id, Tank_names, initial_values
+    register_id = df_sensor_id.loc[:, 0].tolist()
+    initial_regi_values = df_sensor_id.iloc[:, 1].tolist()  # the second column is the initial values
+    regi_names = df_sensor_id.iloc[:, 2].tolist()
+
+    sensor_id = register_id[0:129]
+    Tank_names = regi_names[0:129]
+    initial_pa = initial_regi_values [0:129]
+    return sensor_id, Tank_names, initial_pa, initial_regi_values
 
 
 def write_file(data, logpath, filename, header):
@@ -94,6 +97,18 @@ def live_table(df_pa_live, current_pa_list, sensor_id, sample_period, sample_rat
         return ave_pa_list, df_pa_live, num_rows, len(df_pa_live)
 
 
+def modejudge(modes_list): #the list of treatmode & pump status
+    if max(modes_list[1:]) == 1:
+        log_mode = "LOAD"
+    elif modes_list[0] != 0:
+        log_mode = "LOAD"
+    else:
+        log_mode = "NORMAL"
+    with open(mode_file,'w') as f:
+        f.write(log_mode)
+    return log_mode
+
+
 def main(logpath, sample_rate, sample_period=60):
     """main
     Workflow:
@@ -109,8 +124,8 @@ def main(logpath, sample_rate, sample_period=60):
     server = modbus_rtu.RtuServer(serial.Serial(PORT))
     server.set_verbose = True
 
-    # Read sensor ID, tank names and initial tank values from a file.
-    sensor_id, Tank_names, initial_values = read_sensor_id()
+    # Read register_id, regi_names and initial values from a file.
+    sensor_id, Tank_names, initial_pa, initial_regi_values = read_sensor_id()
 
     # Prepare empty table for further usage.
     df_pa_live = pd.DataFrame()
@@ -130,10 +145,10 @@ def main(logpath, sample_rate, sample_period=60):
         print("server started")
         slave_1 = server.add_slave(1) # GLM ignore value > 65437, all values are positive
         print("slave_1 is added")
-        slave_1.add_block('block1', cst.HOLDING_REGISTERS, 99, 127)  # Pressure values, PLC write to GLM
+        slave_1.add_block('block1', cst.HOLDING_REGISTERS, 99, 136)  # Pressure values, PLC write to GLM
         # slave_1.add_block('block2', cst.HOLDING_REGISTERS, 299, 79)   # volume values, PLC read from GLM
         print("holding registers are added")
-        slave_1.set_values('block1', 99, initial_values[:127])  # Initiate the values with the txt from Stephane
+        slave_1.set_values('block1', 99, initial_regi_values[:136])  # Initiate the values with the txt from Stephane
 
         # Remember the starting time.
 
@@ -149,14 +164,20 @@ def main(logpath, sample_rate, sample_period=60):
             current_date_time = datetime.datetime.now()
             print("\n")
             print("Start")
-            # read the log mode from the log_mode.txt file. In the future this file could also include the pump status,
-            # GPS and treatment mode.
-            with open(mode_file, 'r') as f:
-                log_mode = f.read()
+
+            # Read current Pressure value & treatmode & pump status, written by PLC
+            current_regi_list = list(slave_1.get_values('block1', 99, 136))  # tuple convert to list
+            try:
+                current_press_list = current_regi_list[0:127]
+                current_modes_list = current_regi_list[127:136]
+            except IndexError:
+                print("the Input is not the required length")
+                continue
+
+            # judge the logging mode by treatmode & pump status
+            log_mode = modejudge(current_modes_list)
             print("It's %s mode" % log_mode)
 
-            # Read current Pressure value, written by PLC
-            current_press_list = list(slave_1.get_values('block1', 99, 127))  # tuple convert to list
             # Read trim heel values:
             trim_heel = read_trim_heel(trimheel_path, trimheel_filename)
             # Combine pressure with trim heel.
@@ -172,7 +193,7 @@ def main(logpath, sample_rate, sample_period=60):
                                                                                 sample_rate)
             # Create glm feed
             second = int(t1) - int(t0)
-            print("This is %dth second" %second)
+            print("This is %dth second" % second)
             if log_mode == "NORMAL":
                 if int(t1) > 1 and second % sample_period == 0: # log ave_pa per minute.
                     feed_pa_list = ave_pa_list

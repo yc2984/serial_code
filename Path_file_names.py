@@ -18,7 +18,7 @@ glmtxt = 'READINGS.txt'
 
 # file contains sensor ID, example reading and tank names.
 # initial_info = r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Reference\GLM_Info\Sensor_ID_Tank_name.csv"
-initial_info = r"C:\GLM_logging\ReadOnly\Sensor_ID_Tank_name.csv"
+initial_info = r"C:\GLM_logging\ReadOnly\Sensor_ID_Tank_name2.csv"
 
 # For log volumes, the readings+.txt file.
 # reading_plus_file = r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\GLM_maker_test\03042018\AUDAX - GHS_Version16\AUDAX\READINGS+.TXT"

@@ -1,11 +1,13 @@
+import os
 from tkinter import *
-root = Tk()
+from tkinter import messagebox
+from Path_file_names import mode_file
 
 
 def normal(event):
     global mode
-    mode = "Normal"
-    with open(r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\serial_code\mode.txt",'w') as f:
+    mode = "NORMAL"
+    with open(mode_file,'w') as f:
         f.write(mode)
     print("mode is: ",mode)
 
@@ -13,17 +15,40 @@ def normal(event):
 def load(event):
     global mode
     mode = "LOAD"
-    with open(r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\serial_code\mode.txt",'w') as f:
+    with open(mode_file,'w') as f:
         f.write(mode)
     print("mode is: ", mode)
 
-button_1 = Button(root, text= "Normal Mode")
-button_1.bind("<Button-1>",normal)
-button_1.pack()
 
-button_2 = Button(root, text= "LOAD Mode")
-button_2.bind("<Button-1>",load)
-button_2.pack()
+def LogVolume():
+    os.system('python log_volume.py')
 
-root.mainloop()
 
+def log_mode():
+    with open(mode_file, 'r') as f:
+        return f.read()
+
+
+while True:
+    root = Tk()
+    thelabel1 = Label(root, text="If you changed the logging mode, please close this window to refresh.")
+    thelabel1.pack()
+    thelabel = Label(root, text="Current Mode is :  %s" % log_mode())
+    thelabel.pack()
+    topFrame = Frame(root, width=300, height=200)
+    topFrame.pack()
+    botFrame = Frame(root, width=300, height=200)
+    botFrame.pack(side=BOTTOM)
+
+    button_1 = Button(root, text="NORMAL")
+    button_1.bind("<Button-1>", normal)
+    button_1.pack(side=LEFT)
+
+    button_2 = Button(root, text="LOAD")
+    button_2.bind("<Button-1>", load)
+    button_2.pack(side=RIGHT)
+
+    #button_3 = Button(botFrame, text="Start Logging Volumes", command= LogVolume)
+    #button_3.pack(side=BOTTOM)
+
+    root.mainloop()

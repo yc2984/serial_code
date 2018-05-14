@@ -8,7 +8,7 @@ from modbus_tk import modbus_rtu, hooks
 import serial
 import logging
 from pathlib import Path
-from Path_file_names import mode_file, logpath, filename_long, trimheel_path, trimheel_filename, glmpath, glmtxt, initial_info
+from Path_file_names import mode_file, logpath, trimheel_path, trimheel_filename, glmpath, glmtxt, initial_info
 PORT = 'COM10'
 
 
@@ -138,6 +138,7 @@ def main(logpath, sample_rate, sample_period=60):
         # Remember the starting time.
 
         t0 = time.time()
+        os.getpid()
         while True:
             #hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
             #hooks.install_hook('modbus_rtu.RtuServer.before_write', log_data)
@@ -172,7 +173,7 @@ def main(logpath, sample_rate, sample_period=60):
             # Create glm feed
             second = int(t1) - int(t0)
             print("This is %dth second" %second)
-            if log_mode == "Normal":
+            if log_mode == "NORMAL":
                 if int(t1) > 1 and second % sample_period == 0: # log ave_pa per minute.
                     feed_pa_list = ave_pa_list
                     write_glm_feed(sensor_id, feed_pa_list, glmpath, glmtxt)
@@ -203,6 +204,8 @@ def main(logpath, sample_rate, sample_period=60):
         server.stop()
         print("Server stops")
 
-
+a = os.getpid()
+with open(r"C:\Users\Yang\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\pid_modbus.txt","w") as f:
+    f.write(str(a))
 if __name__ == "__main__":
     main(logpath, 60, 30)  # log_path, sample rate, sample period.

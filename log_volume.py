@@ -1,61 +1,24 @@
-import math
 import os
 import time
 import datetime
 import pandas as pd
-from Lookup_tank_name import id_to_tankname, tanklist, table
+from Lookup_tank_name import tanklist
 from pathlib import Path
 from Path_file_names import logpath, reading_plus_file, mode_file
+import tkinter
+from tkinter import messagebox
 
-
-def read_volume(df_vols, vol_file, sample_period, sample_rate):
+def read_volume(vol_file):
     """
     1. Read READING+.txt file for real-time volumes
-    2. refresh the df_vols that has all the tank reading in the last defined time_gap
-    3. returns
-        (1) average volume of the second last minute
-        (2) average volume of the last minute
-        (3) the live table
-        (4) the number of rows required to start logging
-        (5) the number of rows in current live table
-
+    2. returns the volume list of the tanks
     """
     df_current_vol = pd.read_csv(vol_file, header=None)
     current_vol_list = df_current_vol.iloc[:, 1].tolist()
-    num_rows = sample_period/(60/sample_rate) # If sample_rate = 60, sample period 60 seconds, num_rows is 60.
-    print("%d values will be used for average" % num_rows)
-    print("Before adding new record, the df_vols has %d records" % len(df_vols))
-
-    if len(df_vols) < num_rows*2-1: # skip the first two average period
-        df_vols = pd.concat([df_vols, pd.DataFrame(current_vol_list).T], axis=0)
-        print("After adding new record, the df_vols has %d records" % len(df_vols))
-        return '', '', df_vols, num_rows, len(df_vols)  # The length after append current reading.
-    else:
-        df_vols = pd.concat([df_vols.tail(int(2*num_rows-1)), pd.DataFrame(current_vol_list).T], axis=0)
-        print("After adding new record, the df_vols has %d records" % len(df_vols))
-        average_vol1 = df_vols.iloc[:int(num_rows), :].mean(numeric_only=True, axis=0).tolist()
-        average_vol2 = df_vols.iloc[int(num_rows):, :].mean(numeric_only=True, axis=0).tolist()
-        assert isinstance(average_vol1, list)
-        assert isinstance(average_vol2, list)
-        return average_vol1, average_vol2, df_vols, num_rows, len(df_vols)
+    return current_vol_list
 
 
-def volume_change(vol1, vol2, threshold):
-    """ This function compares two list, return True if
-    at least one of the tank volume changed more than 50 tons """
-    print("Vol1: ", vol1[:5])
-    print("Vol2: ", vol2[:5])
-    print("The change of the first five values: ", [abs(a - b) for a, b in zip(vol1, vol2)][:5])
-    print("The max change is :", max([abs(a-b) for a, b in zip(vol1, vol2)]))
-    if max([abs(a-b) for a, b in zip(vol1, vol2)]) >= threshold:
-        print("at least one volume has changed more than %d" % threshold)
-        return True
-    else:
-        print("no volume has changed more than %d" % threshold)
-        return False
-
-
-def write_file(data, logpath, filename, header):
+def write_file(data, logpath, filename, header, filename2):
     """
     Write or append new record to a csv file.
     Note: Data should be a list, including timestamp as the first element
@@ -68,55 +31,84 @@ def write_file(data, logpath, filename, header):
     else:
         write_mode = 'w+'
         if_header = True
-    with open(my_file, write_mode) as f:
-        df = pd.DataFrame(data).T
-        df.columns = header
-        df.to_csv(f, index=None, header=if_header)
+    try:
+        with open(my_file, write_mode) as f:
+            df = pd.DataFrame(data).T
+            df.columns = header
+            df.to_csv(f, index=None, header=if_header)
+    except PermissionError:
+        print("Please CLOSE the log file")
+        my_file_2 = Path(os.path.join(logpath, filename2))
+        root = tkinter.Tk()
+        root.withdraw()
+        messagebox.showwarning("Warning", "Please CLOSE the log file %s" %my_file)
+        print("The main log file is open, logged in %s" %my_file_2)
+        with open(my_file_2, write_mode) as f:
+            df = pd.DataFrame(data).T
+            df.columns = header
+            df.to_csv(f, index=None, header=if_header)
 
 
-def main(logpath, sample_rate, sample_period=60):
+def main(logpath, sample_rate=60, sample_period=60):
     """This function logs the volume to a csv file when:
     compared with last minute average
     at least one of the tank volume changed more than 50 tons
     """
     df_vols = pd.DataFrame()
-    start_time = time.time()
+    t0 = time.time()
     while True:
-        # There should be a function detecting user input for switching mode.
-        with open(mode_file,'r') as f:
-            log_mode = f.read()
-
+        # this defines the frequency of the main loop, in this case every 1 second.
+        time.sleep(60 / sample_rate)
+        t1 = time.time()
+        current_date_time = datetime.datetime.now()
         print("\n")
         print("Start")
-        #if log_mode == "LOAD" :
-            # sample_period = 10
-
-        time.sleep(60 / sample_rate)
+        with open(mode_file,'r') as f:
+            log_mode = f.read()
         print("It's %s mode" %log_mode)
-        tanknames = tanklist(reading_plus_file)
-        vol_daily_file = str(datetime.datetime.now().strftime("%Y-%m-%d")) + str("_vol_m3.csv")
 
-        average_vol1, average_vol2, df_vols, num_rows, len_df_vols = read_volume(df_vols, reading_plus_file, sample_period, sample_rate)
-        print("Now the live data for average has %d items" % len_df_vols)
-        if len_df_vols < num_rows*2:
-            print("This is the %d value, we need %d values to start logging" %(len_df_vols, num_rows*2))
+        tanknames = tanklist(reading_plus_file)
+        vol_daily_file = str(current_date_time.strftime("%Y-%m-%d")) + str("_vol_m3.csv")
+        filename2 = str(current_date_time.strftime("%Y-%m-%d")) + str("_vol_m3_02.csv")
+
+        current_vol_list = read_volume(reading_plus_file)
+        print("length of current vol list (should be 123):",len(current_vol_list))
+        if len(current_vol_list) < 123:
+            print("Please turn on SEND VOLUME to start logging")
+            root = tkinter.Tk()
+            root.withdraw()
+            messagebox.showwarning("Warning", "Please turn on SEND VOLUME to start logging")
             continue
 
-        current_date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        current_time_vol_list = [current_date_time] + [log_mode] + average_vol2
-        print("length of current_data_list", len(average_vol2))
-        print("length of the data to log:", len(current_time_vol_list))
+        current_date_time_format = current_date_time.strftime("%Y-%m-%d %H:%M:%S")
+        time_mode_vol_list = [current_date_time_format] + [log_mode] + current_vol_list
+        print("length of current_data_list (should be 125)", len(time_mode_vol_list))
+
         log_header = ["Time"] + ["log_mode"] + tanknames
-        print("length of the header",len(log_header))
+        print("length of the header (should be 125)",len(log_header))
+        assert len(log_header) == len(time_mode_vol_list)
 
-        if volume_change(average_vol1, average_vol2, 50) or log_mode == "LOAD":
-            write_file(current_time_vol_list, logpath, vol_daily_file, log_header)
-            print("new value has been logged")
-        else:
-            print("not logged")
+        # Create log file
+        second = int(t1) - int(t0)
+        print("This is %dth second" % second)
+        if log_mode == "NORMAL":
+            if int(t1) > 1 and second % sample_period == 0:  # log per minute.
+                write_file(time_mode_vol_list, logpath, vol_daily_file, log_header, filename2)
+                print("Normal Mode, new value has been logged")
+                assert isinstance(int(second / sample_period),int)
+                print("######## It's the %dth sample_period, volumes are logged" % int(second / sample_period))
+                print("The first five volumes logged: ", time_mode_vol_list[:5])
+            else:
+                print("Nothing logged, only log per %d second" %sample_period)
+        else:  # Load mode
+            write_file(time_mode_vol_list, logpath, vol_daily_file, log_header, filename2)
+            print("LOAD mode, new value has been logged")
 
 
+a = os.getpid()
+with open(r"C:\Users\Yang\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\pid_log_volume.txt","w") as f:
+    f.write(str(a))
 if __name__ == "__main__":
-    main(logpath, 30)  # logpath, sample_rate (no.of readings per minute), by default read measurement every 2 second
+    main(logpath, 60, 30)  # log_path, sample rate, sample period.
 
 

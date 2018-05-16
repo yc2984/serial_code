@@ -1,33 +1,42 @@
+import os
 # This file contains all the path used in the program.
-# log path (for both pressure and volume)
-# logpath = r'C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Log'
+
+#####################################################
+# Please change accordingly
+# Set up com port
+COM_modbus = "COM10"
+COM_trimheel = "COM11"
+
+# Path for logging
 logpath = r'C:\GLM_logging\Logs'
 
-# The file to store trim heel file
-trimheel_path = r'C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Read_trim_heel'
-# trimheel_path = r"C:\GLM_logging\ReadOnly"
+# The read only path
+readonly_path = r'C:\GLM_logging\ReadOnly'
+
+# glm program path
+glmpath = r'C:\GLM_logging\AUDAX_test_v16'
+
+# pid path
+pid_path = r"C:\GLM_logging\Logs\pid"
+
+sample_rate = 60
+sample_period = 60
+
+
+###################################################
+# Please don't touch this part
+
+glmtxt = 'READINGS.txt'
+reading_plus_file = os.path.join(glmpath, "READINGS+.TXT")
+
+# file contains sensor ID, example reading and tank names.
+initial_info = os.path.join(readonly_path, "Sensor_ID_Tank_name2.csv")
+
 # The file name that stored trim heel file.
 trimheel_filename = 'trimheel.txt'
 
-# glm program path
-# glmpath = r'C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\GLM_maker_test\GLM_test'
-glmpath = r'C:\GLM_logging\AUDAX_test_v16'
-# glm feed filename
-# glmtxt = 'glminput.txt'
-glmtxt = 'READINGS.txt'
-
-# file contains sensor ID, example reading and tank names.
-# initial_info = r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Reference\GLM_Info\Sensor_ID_Tank_name.csv"
-initial_info = r"C:\GLM_logging\ReadOnly\Sensor_ID_Tank_name2.csv"
-
-# For log volumes, the readings+.txt file.
-# reading_plus_file = r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\GLM_maker_test\03042018\AUDAX - GHS_Version16\AUDAX\READINGS+.TXT"
-reading_plus_file = r'C:\GLM_logging\AUDAX_test_v16\READINGS+.TXT'
-
 #mode_file
-# mode_file = r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\serial_code\mode.txt"
-mode_file = r"C:\GLM_logging\ReadOnly\mode.txt"
+mode_file = os.path.join(readonly_path, "mode.txt")
 
 # sensor id and tank name correspondence from glm.
-# glm_id_name = r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Reference\GLM_Info\sensor_id_tankname_glm.csv"
-glm_id_name = r"C:\GLM_logging\ReadOnly\sensor_id_tankname_glm.csv"
+glm_id_name = os.path.join(readonly_path, "sensor_id_tankname_glm.csv")

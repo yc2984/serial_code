@@ -34,8 +34,11 @@ starttime = time.time()             # starttime for measurement loop
 
 
 while True:
-    print("test")
-    bytes = ser.readline()
+    try:
+        bytes = ser.readline()
+    except:
+        print("Couldn't receive the trim heel data")
+        continue
     str1 = bytes.decode('utf-8')
     print('You received: ' + bytes.decode('utf-8'))
     if ' ' in str1 and len(str1) == 18: 

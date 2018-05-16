@@ -4,7 +4,7 @@ import datetime
 import pandas as pd
 from Lookup_tank_name import tanklist
 from pathlib import Path
-from Path_file_names import logpath, reading_plus_file, mode_file
+from Path_file_names import logpath, reading_plus_file, mode_file, sample_rate, sample_period, pid_path
 import tkinter
 from tkinter import messagebox
 
@@ -13,10 +13,10 @@ def read_volume(vol_file):
     1. Read READING+.txt file for real-time volumes
     2. returns the volume list of the tanks
     """
-    df_current_vol = pd.read_csv(vol_file, header=None)
+    f = open(vol_file)
+    df_current_vol = pd.read_csv(f, header=None)
     current_vol_list = df_current_vol.iloc[:, 1].tolist()
     return current_vol_list
-
 
 def write_file(data, logpath, filename, header, filename2):
     """
@@ -48,6 +48,12 @@ def write_file(data, logpath, filename, header, filename2):
             df.columns = header
             df.to_csv(f, index=None, header=if_header)
 
+def warning(message):
+    print("Please first start GLM")
+    root = tkinter.Tk()
+    root.withdraw()
+    messagebox.showwarning("Warning", message)
+
 
 def main(logpath, sample_rate=60, sample_period=60):
     """This function logs the volume to a csv file when:
@@ -68,16 +74,18 @@ def main(logpath, sample_rate=60, sample_period=60):
         print("It's %s mode" %log_mode)
 
         tanknames = tanklist(reading_plus_file)
+        if tanknames == None:
+            warning("READINGS+.txt doesn't exist, please first start GLM")
+            continue
+        current_vol_list = read_volume(reading_plus_file)
+
+        # filename of the logs
         vol_daily_file = str(current_date_time.strftime("%Y-%m-%d")) + str("_vol_m3.csv")
         filename2 = str(current_date_time.strftime("%Y-%m-%d")) + str("_vol_m3_02.csv")
 
-        current_vol_list = read_volume(reading_plus_file)
-        print("length of current vol list (should be 123):",len(current_vol_list))
+        print("length of current vol list (should be 123):", len(current_vol_list))
         if len(current_vol_list) < 123:
-            print("Please turn on SEND VOLUME to start logging")
-            root = tkinter.Tk()
-            root.withdraw()
-            messagebox.showwarning("Warning", "Please turn on SEND VOLUME to start logging")
+            warning("Please turn on SEND VOLUME to start logging")
             continue
 
         current_date_time_format = current_date_time.strftime("%Y-%m-%d %H:%M:%S")
@@ -85,7 +93,7 @@ def main(logpath, sample_rate=60, sample_period=60):
         print("length of current_data_list (should be 125)", len(time_mode_vol_list))
 
         log_header = ["Time"] + ["log_mode"] + tanknames
-        print("length of the header (should be 125)",len(log_header))
+        print("length of the header (should be 125)", len(log_header))
         assert len(log_header) == len(time_mode_vol_list)
 
         # Create log file
@@ -106,9 +114,10 @@ def main(logpath, sample_rate=60, sample_period=60):
 
 
 a = os.getpid()
-with open(r"C:\Users\Yang\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\pid_log_volume.txt","w") as f:
+with open(os.path.join(pid_path,"pid2.txt"), "w") as f:
     f.write(str(a))
+
 if __name__ == "__main__":
-    main(logpath, 60, 30)  # log_path, sample rate, sample period.
+    main(logpath, sample_rate, sample_period)  # log_path, sample rate, sample period.
 
 

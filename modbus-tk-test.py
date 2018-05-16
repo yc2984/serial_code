@@ -8,8 +8,8 @@ from modbus_tk import modbus_rtu, hooks
 import serial
 import logging
 from pathlib import Path
-from Path_file_names import mode_file, logpath, trimheel_path, trimheel_filename, glmpath, glmtxt, initial_info
-PORT = 'COM10'
+from Path_file_names import mode_file, logpath, readonly_path, trimheel_filename, glmpath, glmtxt, initial_info, COM_modbus, sample_period, sample_rate, pid_path
+PORT = COM_modbus
 
 
 def read_sensor_id():
@@ -121,7 +121,7 @@ def main(logpath, sample_rate, sample_period=60):
 
     # Create logger and server
     logger = modbus_tk.utils.create_logger(name="console", record_format="%(message)s",level=logging.DEBUG)
-    server = modbus_rtu.RtuServer(serial.Serial(PORT))
+    server = modbus_rtu.RtuServer(serial.Serial(PORT, 19200))
     server.set_verbose = True
 
     # Read register_id, regi_names and initial values from a file.
@@ -151,9 +151,9 @@ def main(logpath, sample_rate, sample_period=60):
         slave_1.set_values('block1', 99, initial_regi_values[:136])  # Initiate the values with the txt from Stephane
 
         # Remember the starting time.
-
         t0 = time.time()
         os.getpid()
+        counter = 0 # number of valid values received
         while True:
             #hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
             #hooks.install_hook('modbus_rtu.RtuServer.before_write', log_data)
@@ -168,22 +168,26 @@ def main(logpath, sample_rate, sample_period=60):
             # Read current Pressure value & treatmode & pump status, written by PLC
             current_regi_list = list(slave_1.get_values('block1', 99, 136))  # tuple convert to list
             try:
-                current_press_list = current_regi_list[0:127]
-                current_modes_list = current_regi_list[127:136]
+                len(current_regi_list) == 136
             except IndexError:
                 print("the Input is not the required length")
                 continue
+            counter += 1
+
+            #split the data into two parts: pressure & modes
+            current_press_list = current_regi_list[0:127]
+            current_modes_list = current_regi_list[127:136]
 
             # judge the logging mode by treatmode & pump status
             log_mode = modejudge(current_modes_list)
             print("It's %s mode" % log_mode)
 
             # Read trim heel values:
-            trim_heel = read_trim_heel(trimheel_path, trimheel_filename)
+            trim_heel = read_trim_heel(readonly_path, trimheel_filename)
             # Combine pressure with trim heel.
             current_pa_list = current_press_list + trim_heel
             # Check the length of the pressure and trim heel record, should be 127 + 2  =129
-            print("length of the pressure and trim heel values, should be 129: ",len(current_pa_list))
+            print("length of the pressure and trim heel values, should be 129: ", len(current_pa_list))
 
             # Call the live_table function to get the correspondent feed to feed glm.
             # if normal mode, average p,a; if load or treat mode, realtime p,a
@@ -194,8 +198,9 @@ def main(logpath, sample_rate, sample_period=60):
             # Create glm feed
             second = int(t1) - int(t0)
             print("This is %dth second" % second)
+            print("This is %dth valid values received" % counter)
             if log_mode == "NORMAL":
-                if int(t1) > 1 and second % sample_period == 0: # log ave_pa per minute.
+                if int(t1) > 1 and counter % sample_period == 0: # log ave_pa per minute.
                     feed_pa_list = ave_pa_list
                     write_glm_feed(sensor_id, feed_pa_list, glmpath, glmtxt)
                     assert isinstance (int(second/sample_period), int) # it doesn't work anymore when you pause the program.
@@ -226,7 +231,8 @@ def main(logpath, sample_rate, sample_period=60):
         print("Server stops")
 
 a = os.getpid()
-with open(r"C:\Users\Yang\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\pid_modbus.txt","w") as f:
+with open(os.path.join(pid_path,"pid1.txt"), "w") as f:
     f.write(str(a))
+
 if __name__ == "__main__":
-    main(logpath, 60, 30)  # log_path, sample rate, sample period.
+    main(logpath, sample_rate, sample_period)

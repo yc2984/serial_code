@@ -13,8 +13,9 @@ PORT = COM_modbus
 
 
 def read_sensor_id():
-    # Read sensor ID, tank names and initial tank values from a file.
-    # Initialize the values with example txt from Stephane.
+    # Read PLC register id(100 - 235 + 227 & 228 (repeated, for trim& heel)), description (Tank_names),
+    #  and initial values from a file.
+    # Initialize the pressure values with example txt from Stephane.
     df_sensor_id = pd.read_csv(initial_info, header=None)
     register_id = df_sensor_id.loc[:, 0].tolist()
     initial_regi_values = df_sensor_id.iloc[:, 1].tolist()  # the second column is the initial values
@@ -52,7 +53,7 @@ def write_glm_feed(sensor_id, data, glmpath, glmtxt):  #  data should be a list,
     glm_feed_table.to_csv(os.path.join(glmpath, glmtxt), index=False, header=glm_feed_table.columns, mode='w')
 
 
-def read_trim_heel(trimheel_path, trimheel_filename):
+def read_trim_heel(trimheel_path, trimheel_filename): # read trim, heel from a textfile
     with open(os.path.join(trimheel_path,trimheel_filename), 'r') as th:
         trim_heel = list(th.read().split(","))
         trim_heel = [float(x) for x in trim_heel]
@@ -64,28 +65,27 @@ def read_trim_heel(trimheel_path, trimheel_filename):
 def live_table(df_pa_live, current_pa_list, sensor_id, sample_period, sample_rate):
     """
     df_pa_live: a pre-defined empty table
-    current_press_list: the readings from modbus, refreshed every second, 127 items
+    current_pa_list: pressure& trimheel, refreshed every second, 129 items
     sensor_id: the sensor id that corresponds to the sequence of modbus readings. 129 items
     sample_period: the period that user want to average on
     sample_rate: the number of readings every minute.
 
     1. For normal mode, to construct a live table containing 1 minute (or user defined period) data.
     2. refresh every second
-    2. returns
+    3. returns
         (1) average pressure of the last minute every minute. otherwise return None
         (2) the live table
-        (3) the number of rows required to start logging
+        (3) the number of rows required to start logging (depends on sample period & rate)
         (4) the number of rows in current live table
 
     """
     num_rows = sample_period/(60/sample_rate) # If sample_rate = 60, sample period 60 seconds, num_rows is 60.
-    print("%d values will be used for average" % num_rows)
+    print("%d values will be used for average" % num_rows) # #of rows required
     print("Before adding new record, the df_vols has %d records" % len(df_pa_live))
 
     if len(df_pa_live) < num_rows - 1:  # accumulate the first minute to get an average.
         df_pa_live = pd.concat([df_pa_live, pd.DataFrame(current_pa_list).T], axis=0)
         print("After adding new record, the df_vols has %d records" % len(df_pa_live))
-        # Create a table for glm_write
         return None, df_pa_live, num_rows, len(df_pa_live)  # The length after append current reading.
     else:
         df_pa_live = pd.concat([df_pa_live.tail(int(num_rows-1)), pd.DataFrame(current_pa_list).T], axis=0)
@@ -113,10 +113,10 @@ def main(logpath, sample_rate, sample_period=60):
     """main
     Workflow:
     1. Create server (where slave stays on)
-    2. Initialize the sensor id , tanknames and initial pressure values*, not sure it's needed.
+    2. Initialize the sensor id , tanknames, initial pressure values, trimheel, treatmodes, pump status.
     3. try to start server
     4. loop every seconds to get new readings from modbus.
-    5. check log mode, and decide what to output.
+    5. judge log mode by treatmode and pump status, and decide what to output.
     """
 
     # Create logger and server
@@ -152,7 +152,6 @@ def main(logpath, sample_rate, sample_period=60):
 
         # Remember the starting time.
         t0 = time.time()
-        os.getpid()
         counter = 0 # number of valid values received
         while True:
             #hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
@@ -167,6 +166,7 @@ def main(logpath, sample_rate, sample_period=60):
 
             # Read current Pressure value & treatmode & pump status, written by PLC
             current_regi_list = list(slave_1.get_values('block1', 99, 136))  # tuple convert to list
+            # Verify the length of input
             try:
                 len(current_regi_list) == 136
             except IndexError:
@@ -178,7 +178,7 @@ def main(logpath, sample_rate, sample_period=60):
             current_press_list = current_regi_list[0:127]
             current_modes_list = current_regi_list[127:136]
 
-            # judge the logging mode by treatmode & pump status
+            # judge the logging mode
             log_mode = modejudge(current_modes_list)
             print("It's %s mode" % log_mode)
 
@@ -186,7 +186,7 @@ def main(logpath, sample_rate, sample_period=60):
             trim_heel = read_trim_heel(readonly_path, trimheel_filename)
             # Combine pressure with trim heel.
             current_pa_list = current_press_list + trim_heel
-            # Check the length of the pressure and trim heel record, should be 127 + 2  =129
+            # Check the length of the pressure and trim heel record
             print("length of the pressure and trim heel values, should be 129: ", len(current_pa_list))
 
             # Call the live_table function to get the correspondent feed to feed glm.
@@ -203,7 +203,6 @@ def main(logpath, sample_rate, sample_period=60):
                 if int(t1) > 1 and counter % sample_period == 0: # log ave_pa per minute.
                     feed_pa_list = ave_pa_list
                     write_glm_feed(sensor_id, feed_pa_list, glmpath, glmtxt)
-                    assert isinstance (int(second/sample_period), int) # it doesn't work anymore when you pause the program.
                     print("######## It's the %dth sample_period, glm feed has been updated" % int(second/sample_period))
                     print("The first five values of glm feed(ave data): ", feed_pa_list[:5])
                 else: #  accumulate the live table
@@ -222,7 +221,7 @@ def main(logpath, sample_rate, sample_period=60):
             log_header = ["Time"] + sensor_id
             if log_mode == "LOAD" or feed_pa_list is not None:
                 log_pa_list = [current_date_time] + feed_pa_list
-                write_file(log_pa_list, logpath, filename, log_header) #data, logpath, filename, header
+                write_file(log_pa_list, logpath, filename, log_header)
             # check the dimension and the last row of values DataFrame
             # print("The dimension of values DataFrame: %s" % (values.shape,))
 

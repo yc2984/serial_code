@@ -17,6 +17,8 @@ def tanklist(vol_file):
         df_current_vol = pd.read_csv(vol_file, header=None)
     except FileNotFoundError:
         return None
+    except OSError:
+        return None
     ids = df_current_vol.iloc[:, 0]
     tanknames = []
     for id in ids:

@@ -13,7 +13,12 @@ def read_volume(vol_file):
     1. Read READING+.txt file for real-time volumes
     2. returns the volume list of the tanks
     """
-    f = open(vol_file)
+    try:
+        f = open(vol_file)
+    except OSError:
+        return None
+    except PermissionError:
+        return None
     df_current_vol = pd.read_csv(f, header=None)
     current_vol_list = df_current_vol.iloc[:, 1].tolist()
     return current_vol_list
@@ -56,11 +61,10 @@ def warning(message):
 
 
 def main(logpath, sample_rate=60, sample_period=60):
-    """This function logs the volume to a csv file when:
-    compared with last minute average
-    at least one of the tank volume changed more than 50 tons
+    """This function logs the volume to a csv file.
+    1. For LOAD mode, log every second
+    2. For NORMAL mode, log every minute
     """
-    df_vols = pd.DataFrame()
     t0 = time.time()
     while True:
         # this defines the frequency of the main loop, in this case every 1 second.
@@ -73,11 +77,15 @@ def main(logpath, sample_rate=60, sample_period=60):
             log_mode = f.read()
         print("It's %s mode" %log_mode)
 
+        # Return the tank names from the READINGS+.txt
         tanknames = tanklist(reading_plus_file)
         if tanknames == None:
             warning("READINGS+.txt doesn't exist, please first start GLM")
             continue
         current_vol_list = read_volume(reading_plus_file)
+        if current_vol_list == None:
+            print("Can't read READING+.txt file, will retry")
+            continue
 
         # filename of the logs
         vol_daily_file = str(current_date_time.strftime("%Y-%m-%d")) + str("_vol_m3.csv")

@@ -8,7 +8,7 @@ from modbus_tk import modbus_rtu, hooks
 import serial
 import logging
 from pathlib import Path
-from Path_file_names import mode_file, logpath, readonly_path, trimheel_filename, glmpath, glmtxt, initial_info, COM_modbus, sample_period, sample_rate, pid_path
+from Path_file_names import mode_file, logpath, readonly_path, trimheel_filename, glmpath, glmtxt, initial_info, COM_modbus, sample_period, sample_rate
 PORT = COM_modbus
 
 
@@ -229,9 +229,6 @@ def main(logpath, sample_rate, sample_period=60):
         server.stop()
         print("Server stops")
 
-a = os.getpid()
-with open(os.path.join(pid_path,"pid1.txt"), "w") as f:
-    f.write(str(a))
 
 if __name__ == "__main__":
     main(logpath, sample_rate, sample_period)

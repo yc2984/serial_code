@@ -2,11 +2,20 @@ import os
 import time
 import datetime
 import pandas as pd
-from Lookup_tank_name import tanklist
+from Lookup_tank_name import id_to_tankname
 from pathlib import Path
 from Path_file_names import logpath, reading_plus_file, mode_file, sample_rate, sample_period, pid_path
 import tkinter
 from tkinter import messagebox
+
+
+def warning(message):
+    print("Please first start GLM")
+    root = tkinter.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    messagebox.showwarning("Warning", message)
+
 
 def read_volume(vol_file):
     """
@@ -14,14 +23,30 @@ def read_volume(vol_file):
     2. returns the volume list of the tanks
     """
     try:
-        f = open(vol_file)
+        file = open(vol_file)
+    except PermissionError: # file is being written by GLM.
+        return None, None
     except OSError:
-        return None
-    except PermissionError:
-        return None
-    df_current_vol = pd.read_csv(f, header=None)
+        warning("READINGS+.txt doesn't exist, please start GLM")
+        return None, None
+
+    df_current_vol = pd.read_csv(file, header=None)
+    print("length of READINGS+.txt (should be 123):", len(df_current_vol))
+
+    # If GLM is not open or Send volume is not on,  READINGS+.txt will be empty
+    if len(df_current_vol) < 123:
+        warning("Please Start GLM and turn on SEND VOLUME to start logging")
+        return None, None
+    # Read tank volumes
     current_vol_list = df_current_vol.iloc[:, 1].tolist()
-    return current_vol_list
+    # Read tank id and convert to names
+    ids = df_current_vol.iloc[:, 0]
+    tanknames = []
+    for id in ids:
+        tankname = id_to_tankname(id)
+        tanknames.append(tankname)
+    return tanknames, current_vol_list
+
 
 def write_file(data, logpath, filename, header, filename2):
     """
@@ -53,12 +78,6 @@ def write_file(data, logpath, filename, header, filename2):
             df.columns = header
             df.to_csv(f, index=None, header=if_header)
 
-def warning(message):
-    print("Please first start GLM")
-    root = tkinter.Tk()
-    root.withdraw()
-    messagebox.showwarning("Warning", message)
-
 
 def main(logpath, sample_rate=60, sample_period=60):
     """This function logs the volume to a csv file.
@@ -77,25 +96,16 @@ def main(logpath, sample_rate=60, sample_period=60):
             log_mode = f.read()
         print("It's %s mode" %log_mode)
 
-        # Return the tank names from the READINGS+.txt
-        tanknames = tanklist(reading_plus_file)
-        if tanknames == None:
-            warning("READINGS+.txt doesn't exist, please first start GLM")
-            continue
-        current_vol_list = read_volume(reading_plus_file)
-        if current_vol_list == None:
-            print("Can't read READING+.txt file, will retry")
+        # Read the file READINGS+.txt
+        tanknames, current_vol_list = read_volume(reading_plus_file)
+        if (tanknames or current_vol_list) is None:
             continue
 
         # filename of the logs
         vol_daily_file = str(current_date_time.strftime("%Y-%m-%d")) + str("_vol_m3.csv")
         filename2 = str(current_date_time.strftime("%Y-%m-%d")) + str("_vol_m3_02.csv")
 
-        print("length of current vol list (should be 123):", len(current_vol_list))
-        if len(current_vol_list) < 123:
-            warning("Please turn on SEND VOLUME to start logging")
-            continue
-
+        # Appending time and log mode
         current_date_time_format = current_date_time.strftime("%Y-%m-%d %H:%M:%S")
         time_mode_vol_list = [current_date_time_format] + [log_mode] + current_vol_list
         print("length of current_data_list (should be 125)", len(time_mode_vol_list))

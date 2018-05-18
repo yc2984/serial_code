@@ -16,8 +16,6 @@ readonly_path = r'C:\GLM_logging\ReadOnly'
 # glm program path
 glmpath = r'C:\GLM_logging\AUDAX_test_v16'
 
-# pid path
-pid_path = r"C:\GLM_logging\Logs\pid"
 
 sample_rate = 60
 sample_period = 60

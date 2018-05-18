@@ -12,22 +12,3 @@ def id_to_tankname(id):
     return "draft"
 
 
-def tanklist(vol_file):
-    try:
-        df_current_vol = pd.read_csv(vol_file, header=None)
-    except FileNotFoundError:
-        return None
-    except OSError:
-        return None
-    ids = df_current_vol.iloc[:, 0]
-    tanknames = []
-    for id in ids:
-        tankname = id_to_tankname(id)
-        tanknames.append(tankname)
-        #print("sensor", id, ":", tankname)
-        #print(type(tankname))
-        #print(len(tankname))
-    #print("length of tanknames:",len(tanknames))
-    #print("Type of tanknames:",type(tanknames))
-    return tanknames
-

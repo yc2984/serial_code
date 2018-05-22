@@ -4,7 +4,7 @@ import datetime
 import pandas as pd
 from Lookup_tank_name import id_to_tankname
 from pathlib import Path
-from Path_file_names import logpath, reading_plus_file, mode_file, sample_rate, sample_period
+from Path_file_names import logpath, reading_plus_file, mode_file, sample_rate, sample_period, readonly_path
 import tkinter
 from tkinter import messagebox
 
@@ -31,6 +31,7 @@ def read_volume(vol_file):
         return None, None
 
     df_current_vol = pd.read_csv(file, header=None)
+    file.close()
     print("length of READINGS+.txt (should be 123):", len(df_current_vol))
 
     # If GLM is not open or Send volume is not on,  READINGS+.txt will be empty
@@ -130,6 +131,9 @@ def main(logpath, sample_rate=60, sample_period=60):
             write_file(time_mode_vol_list, logpath, vol_daily_file, log_header, filename2)
             print("LOAD mode, new value has been logged")
 
+a = os.getpid()
+with open(os.path.join(readonly_path,"pid_log_volume.txt"),"w") as f:
+    f.write(str(a))
 
 if __name__ == "__main__":
     main(logpath, sample_rate, sample_period)  # log_path, sample rate, sample period.

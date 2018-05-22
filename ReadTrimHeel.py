@@ -39,6 +39,10 @@ while True:
     except:
         print("Couldn't receive the trim heel data")
         continue
+    a = os.getpid()
+    with open(os.path.join(readonly_path, "pid_trimheel.txt"), "w") as f:
+        f.write(str(a))
+
     str1 = bytes.decode('utf-8')
     print('You received: ' + bytes.decode('utf-8'))
     if ' ' in str1 and len(str1) == 18: 
@@ -61,4 +65,6 @@ while True:
     time.sleep(samplerate - ((time.time() - starttime) % samplerate))
     ind = ind+1
     len(str1)
+
+
     

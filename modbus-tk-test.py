@@ -230,5 +230,9 @@ def main(logpath, sample_rate, sample_period=60):
         print("Server stops")
 
 
+a = os.getpid()
+with open(os.path.join(readonly_path,"pid_modbus-tk-test.txt"),"w") as f:
+    f.write(str(a))
+
 if __name__ == "__main__":
     main(logpath, sample_rate, sample_period)

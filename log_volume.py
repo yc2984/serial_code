@@ -131,6 +131,7 @@ def main(logpath, sample_rate=60, sample_period=60):
             write_file(time_mode_vol_list, logpath, vol_daily_file, log_header, filename2)
             print("LOAD mode, new value has been logged")
 
+
 a = os.getpid()
 with open(os.path.join(readonly_path,"pid_log_volume.txt"),"w") as f:
     f.write(str(a))

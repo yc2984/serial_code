@@ -55,11 +55,15 @@ def write_glm_feed(sensor_id, data, glmpath, glmtxt):  #  data should be a list,
 
 def read_trim_heel(trimheel_path, trimheel_filename): # read trim, heel from a textfile
     with open(os.path.join(trimheel_path,trimheel_filename), 'r') as th:
-        trim_heel = list(th.read().split(","))
-        trim_heel = [float(x) for x in trim_heel]
-        print("The length of trim_heel: ",len(trim_heel))
-        print("data type trim",type(trim_heel[0]))
-        return trim_heel
+        try:
+            trim_heel = list(th.read().split(","))
+            trim_heel = [float(x) for x in trim_heel]
+            print("The length of trim_heel: ",len(trim_heel))
+            print("data type trim",type(trim_heel[0]))
+            return trim_heel
+        except ValueError:
+            return [0,0] # assume the first value is always valid, because it's pre defined.
+
 
 
 def live_table(df_pa_live, current_pa_list, sensor_id, sample_period, sample_rate):
@@ -183,7 +187,7 @@ def main(logpath, sample_rate, sample_period=60):
             print("It's %s mode" % log_mode)
 
             # Read trim heel values:
-            trim_heel = read_trim_heel(readonly_path, trimheel_filename)
+            trim_heel = read_trim_heel(trim_heel, readonly_path, trimheel_filename)
             # Combine pressure with trim heel.
             current_pa_list = current_press_list + trim_heel
             # Check the length of the pressure and trim heel record

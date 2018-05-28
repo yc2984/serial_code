@@ -158,8 +158,8 @@ def main(logpath, sample_rate, sample_period=60):
         t0 = time.time()
         counter = 0 # number of valid values received
         while True:
-            #hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
-            #hooks.install_hook('modbus_rtu.RtuServer.before_write', log_data)
+            hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
+            hooks.install_hook('modbus_rtu.RtuServer.before_write', log_data)
 
             # this defines the frequency of the main loop, in this case every 1 second.
             time.sleep(60 / sample_rate)
@@ -187,7 +187,7 @@ def main(logpath, sample_rate, sample_period=60):
             print("It's %s mode" % log_mode)
 
             # Read trim heel values:
-            trim_heel = read_trim_heel(trim_heel, readonly_path, trimheel_filename)
+            trim_heel = read_trim_heel(readonly_path, trimheel_filename)
             # Combine pressure with trim heel.
             current_pa_list = current_press_list + trim_heel
             # Check the length of the pressure and trim heel record

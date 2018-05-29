@@ -126,7 +126,7 @@ def main(logpath, sample_rate, sample_period=60):
     # Create logger and server
     logger = modbus_tk.utils.create_logger(name="console", record_format="%(message)s",level=logging.DEBUG)
     server = modbus_rtu.RtuServer(serial.Serial(PORT, 19200))
-    server.set_verbose = True
+    server.set_verbose(True)
 
     # Read register_id, regi_names and initial values from a file.
     sensor_id, Tank_names, initial_pa, initial_regi_values = read_sensor_id()

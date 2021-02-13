@@ -62,8 +62,7 @@ def read_trim_heel(trimheel_path, trimheel_filename): # read trim, heel from a t
             print("data type trim",type(trim_heel[0]))
             return trim_heel
         except ValueError:
-            return [0,0] # assume the first value is always valid, because it's pre defined.
-
+            return [0,0]
 
 
 def live_table(df_pa_live, current_pa_list, sensor_id, sample_period, sample_rate):
@@ -98,6 +97,7 @@ def live_table(df_pa_live, current_pa_list, sensor_id, sample_period, sample_rat
         print("ave_pa_list has %d elements (should be 129)" %len(ave_pa_list))
         assert isinstance(ave_pa_list, list)
         # Create a table for glm_write
+        print(df_pa_live[:5])
         return ave_pa_list, df_pa_live, num_rows, len(df_pa_live)
 
 
@@ -138,28 +138,28 @@ def main(logpath, sample_rate, sample_period=60):
         logger.info("running...")
         logger.info("enter 'quit' for closing the server")
 
-        def log_data(data):
-            server, bytes_data = data
-            logger.info(bytes_data)
+        #def log_data(data):
+            #server, bytes_data = data
+            #logger.info(bytes_data)
 
-        hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
-        hooks.install_hook('modbus_rtu.RtuServer.before_write', log_data)
+        #hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
+        #hooks.install_hook('modbus_rtu.RtuServer.before_write', log_data)
 
         server.start()
         print("server started")
         slave_1 = server.add_slave(1) # GLM ignore value > 65437, all values are positive
         print("slave_1 is added")
-        slave_1.add_block('block1', cst.HOLDING_REGISTERS, 99, 136)  # Pressure values, PLC write to GLM
-        # slave_1.add_block('block2', cst.HOLDING_REGISTERS, 299, 79)   # volume values, PLC read from GLM
+        slave_1.add_block('block1', cst.HOLDING_REGISTERS, 99, 127)  # Pressure values, PLC write to GLM
+        slave_1.add_block('block2', cst.HOLDING_REGISTERS, 299, 79)   # volume values, PLC read from GLM
         print("holding registers are added")
-        slave_1.set_values('block1', 99, initial_regi_values[:136])  # Initiate the values with the txt from Stephane
-
+        slave_1.set_values('block1', 99, initial_regi_values[:127])  # Initiate the values with the txt from Stephane
+        slave_1.set_values('block2', 299, 79*[400])
         # Remember the starting time.
         t0 = time.time()
         counter = 0 # number of valid values received
         while True:
-            hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
-            hooks.install_hook('modbus_rtu.RtuServer.before_write', log_data)
+            #hooks.install_hook('modbus_rtu.RtuServer.after_read', log_data)
+            #hooks.install_hook('modbus_rtu.RtuServer.before_write', log_data)
 
             # this defines the frequency of the main loop, in this case every 1 second.
             time.sleep(60 / sample_rate)
@@ -169,10 +169,10 @@ def main(logpath, sample_rate, sample_period=60):
             print("Start")
 
             # Read current Pressure value & treatmode & pump status, written by PLC
-            current_regi_list = list(slave_1.get_values('block1', 99, 136))  # tuple convert to list
+            current_regi_list = list(slave_1.get_values('block1', 99, 127))  # tuple convert to list
             # Verify the length of input
             try:
-                len(current_regi_list) == 136
+                len(current_regi_list) == 127
             except IndexError:
                 print("the Input is not the required length")
                 continue
@@ -180,7 +180,8 @@ def main(logpath, sample_rate, sample_period=60):
 
             #split the data into two parts: pressure & modes
             current_press_list = current_regi_list[0:127]
-            current_modes_list = current_regi_list[127:136]
+            #current_modes_list = current_regi_list[127:136]
+            current_modes_list = [0]*9
 
             # judge the logging mode
             log_mode = modejudge(current_modes_list)

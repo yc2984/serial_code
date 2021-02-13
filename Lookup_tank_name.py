@@ -1,7 +1,7 @@
 import pandas as pd
+from Path_file_names import glm_id_name
 
-table = pd.read_csv(r"C:\Users\Yang\Documents\RBES work\Projects&study\Sensors\Reference\GLM_Info\sensor_id_tankname_vol.csv")
-
+table = pd.read_csv(glm_id_name)
 
 def id_to_tankname(id):
     """ This function looks up the tank name by sensor ID, returns a list of tanknames"""
@@ -11,18 +11,4 @@ def id_to_tankname(id):
         return tankname
     return "draft"
 
-
-def tanklist(vol_file):
-    df_current_vol = pd.read_csv(vol_file, header=None)
-    ids = df_current_vol.iloc[:, 0]
-    tanknames = []
-    for id in ids:
-        tankname = id_to_tankname(id)
-        tanknames.append(tankname)
-        #print("sensor", id, ":", tankname)
-        #print(type(tankname))
-        #print(len(tankname))
-    print("length of tanknames:",len(tanknames))
-    print("Type of tanknames:",type(tanknames))
-    return tanknames
 
